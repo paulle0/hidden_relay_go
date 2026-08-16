@@ -1,4 +1,4 @@
-// Package nrvaddressparser implements encoding and decoding of hidden/virtual
+// Package nrvaddress implements encoding and decoding of hidden/virtual
 // relay addresses as described in the "Nip for Virtual/Hidden Relays".
 //
 // Two representations of the same data are supported:
@@ -10,7 +10,7 @@
 // relays. The bech32 form uses the TLV layout of NIP-19: type 0 holds the
 // 32 raw bytes of the public key, type 1 holds one rendezvous relay each
 // (ASCII, may occur multiple times).
-package nrvaddressparser
+package nrvaddress
 
 import (
 	"encoding/hex"
