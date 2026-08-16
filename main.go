@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	nrv "github.com/paulle0/hidden_relay_go/nrvadress"
+	nrv "github.com/paulle0/hidden_relay_go/nrvaddress"
 )
 
 func main() {
