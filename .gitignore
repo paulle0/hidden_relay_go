@@ -1,2 +1,3 @@
 hidden_relay
 *.exe
+/hidden_relay_go
