@@ -1,22 +1,24 @@
 // Package nrvaddress implements encoding and decoding of hidden/virtual
 // relay addresses as described in the "Nip for Virtual/Hidden Relays".
 //
-// Two representations of the same data are supported:
+// An address has a single representation, a bech32 string in the style of
+// NIP-19:
 //
-//	bech32 (NIP-19 style):  nrvrelay1...
-//	url:                    nostr+nrv://<hexpubkey>?relay=<relay1>&relay=<relay2>
+//	nrv1...
 //
-// Both carry the 32-byte public key of the hidden relay and its rendezvous
-// relays. The bech32 form uses the TLV layout of NIP-19: type 0 holds the
-// 32 raw bytes of the public key, type 1 holds one rendezvous relay each
-// (ASCII, may occur multiple times).
+// It carries the 32-byte public key of the hidden relay and its rendezvous
+// relays, in the TLV layout of NIP-19: type 0 holds the 32 raw bytes of the
+// public key, type 1 holds one rendezvous relay each (ASCII, may occur
+// multiple times).
+//
+// A hidden relay is referenced in events requiring an "r" tag as
+// ["r", "nrv1..."].
 package nrvaddress
 
 import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/btcsuite/btcd/btcutil/bech32"
@@ -24,13 +26,11 @@ import (
 
 const (
 	// HRP is the bech32 human readable part of a hidden relay address.
-	HRP = "nrvrelay"
+	HRP = "nrv"
 
-	// URLScheme is the scheme of the url representation, without "://".
-	URLScheme = "nostr+nrv"
-
-	// URLPrefix is the full prefix of the url representation.
-	URLPrefix = URLScheme + "://"
+	// Prefix is the start of every hidden relay address: the human readable
+	// part plus the bech32 separator.
+	Prefix = HRP + "1"
 
 	tlvTypeSpecial = 0 // 32 bytes public key
 	tlvTypeRelay   = 1 // one rendezvous relay, ASCII
@@ -59,34 +59,8 @@ func (a Address) Validate() error {
 	return nil
 }
 
-// Encode returns both representations of the address.
-func Encode(a Address) (bech32Addr, urlAddr string, err error) {
-	bech32Addr, err = EncodeBech32(a)
-	if err != nil {
-		return "", "", err
-	}
-	urlAddr, err = EncodeURL(a)
-	if err != nil {
-		return "", "", err
-	}
-	return bech32Addr, urlAddr, nil
-}
-
-// Decode parses either representation, picking the format from the input.
-func Decode(s string) (Address, error) {
-	trimmed := strings.TrimSpace(s)
-	switch {
-	case strings.HasPrefix(strings.ToLower(trimmed), URLPrefix):
-		return DecodeURL(trimmed)
-	case strings.HasPrefix(strings.ToLower(trimmed), HRP+"1"):
-		return DecodeBech32(trimmed)
-	default:
-		return Address{}, fmt.Errorf("unrecognized hidden relay address: expected a %q or %q address", HRP+"1...", URLPrefix+"...")
-	}
-}
-
-// EncodeBech32 renders the address as an "nrvrelay1..." bech32 string.
-func EncodeBech32(a Address) (string, error) {
+// Encode renders the address as an "nrv1..." bech32 string.
+func Encode(a Address) (string, error) {
 	pubKey, err := decodePubKey(a.PublicKey)
 	if err != nil {
 		return "", err
@@ -108,13 +82,18 @@ func EncodeBech32(a Address) (string, error) {
 		return "", fmt.Errorf("converting address to bech32 data: %w", err)
 	}
 	// bech32.Encode imposes no length limit, which is what NIP-19 needs: unlike
-	// BIP-173 addresses, nrvrelay strings may exceed 90 characters.
+	// BIP-173 addresses, nrv strings may exceed 90 characters.
 	return bech32.Encode(HRP, data)
 }
 
-// DecodeBech32 parses an "nrvrelay1..." bech32 string.
-func DecodeBech32(s string) (Address, error) {
-	hrp, data, err := bech32.DecodeNoLimit(strings.TrimSpace(s))
+// Decode parses an "nrv1..." bech32 string.
+func Decode(s string) (Address, error) {
+	s = strings.TrimSpace(s)
+	if !strings.HasPrefix(strings.ToLower(s), Prefix) {
+		return Address{}, fmt.Errorf("unrecognized hidden relay address: expected a %q address", Prefix+"...")
+	}
+
+	hrp, data, err := bech32.DecodeNoLimit(s)
 	if err != nil {
 		return Address{}, fmt.Errorf("invalid bech32 string: %w", err)
 	}
@@ -164,64 +143,6 @@ func DecodeBech32(s string) (Address, error) {
 	}
 	if !gotPubKey {
 		return Address{}, errors.New("address contains no public key")
-	}
-	return addr, nil
-}
-
-// EncodeURL renders the address as a "nostr+nrv://..." url.
-func EncodeURL(a Address) (string, error) {
-	if _, err := decodePubKey(a.PublicKey); err != nil {
-		return "", err
-	}
-
-	var b strings.Builder
-	b.WriteString(URLPrefix)
-	b.WriteString(strings.ToLower(a.PublicKey))
-	for i, relay := range a.Relays {
-		if err := validateRelay(relay); err != nil {
-			return "", err
-		}
-		if i == 0 {
-			b.WriteByte('?')
-		} else {
-			b.WriteByte('&')
-		}
-		b.WriteString("relay=")
-		b.WriteString(url.QueryEscape(relay))
-	}
-	return b.String(), nil
-}
-
-// DecodeURL parses a "nostr+nrv://..." url. Relay values may be percent-encoded
-// or given verbatim.
-func DecodeURL(s string) (Address, error) {
-	s = strings.TrimSpace(s)
-	if len(s) < len(URLPrefix) || !strings.EqualFold(s[:len(URLPrefix)], URLPrefix) {
-		return Address{}, fmt.Errorf("missing %q prefix", URLPrefix)
-	}
-	rest := s[len(URLPrefix):]
-
-	pubKeyPart, query, _ := strings.Cut(rest, "?")
-	pubKeyPart, _, _ = strings.Cut(pubKeyPart, "#")
-	pubKeyPart = strings.TrimSuffix(pubKeyPart, "/")
-	if _, err := decodePubKey(pubKeyPart); err != nil {
-		return Address{}, err
-	}
-
-	addr := Address{PublicKey: strings.ToLower(pubKeyPart)}
-	if query == "" {
-		return addr, nil
-	}
-
-	values, err := url.ParseQuery(query)
-	if err != nil {
-		return Address{}, fmt.Errorf("invalid query %q: %w", query, err)
-	}
-	for _, relay := range values["relay"] {
-		if err := validateRelay(relay); err != nil {
-			return Address{}, err
-		}
-		addr.Relays = append(addr.Relays, relay)
 	}
 	return addr, nil
 }
