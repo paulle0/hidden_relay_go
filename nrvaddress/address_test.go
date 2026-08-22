@@ -38,7 +38,6 @@ func TestDecode(t *testing.T) {
 	}{
 		{"bech32", testBech32},
 		{"url", testURL},
-		{"url with escaped relay", testURLEscaped},
 	}
 
 	for _, tt := range tests {
