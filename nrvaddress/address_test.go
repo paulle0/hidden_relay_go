@@ -26,8 +26,8 @@ func TestEncode(t *testing.T) {
 	if bech32Addr != testBech32 {
 		t.Errorf("Encode() bech32 = %q, want %q", bech32Addr, testBech32)
 	}
-	if urlAddr != testURLEscaped {
-		t.Errorf("Encode() url = %q, want %q", urlAddr, testURLEscaped)
+	if urlAddr != testURL {
+		t.Errorf("Encode() url = %q, want %q", urlAddr, testURL)
 	}
 }
 
