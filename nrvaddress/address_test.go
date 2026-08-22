@@ -12,9 +12,6 @@ const (
 
 	// The url as a user would type it, with the relay left verbatim.
 	testURL = "nostr+nrv://b118c8f2b6f8219ff6ffeb3ed4898babd51cef2d39914fa07ab0331e0f19902b?relay=wss://nos.lol"
-
-	// The same url as EncodeURL writes it: relay values are percent-escaped.
-	testURLEscaped = "nostr+nrv://b118c8f2b6f8219ff6ffeb3ed4898babd51cef2d39914fa07ab0331e0f19902b?relay=wss%3A%2F%2Fnos.lol"
 )
 
 func testAddress() Address {
