@@ -9,9 +9,6 @@ const (
 	testRelay  = "wss://nos.lol"
 
 	testBech32 = "nrvrelay1qqstzxxg72m0sgvl7ml7k0k53x96h4guauknny205patqvc7puveq2cpp4mhxue69uhkummn9ekx7mq8vnqfg"
-
-	// The url as a user would type it, with the relay left verbatim.
-	testURL = "nostr+nrv://b118c8f2b6f8219ff6ffeb3ed4898babd51cef2d39914fa07ab0331e0f19902b?relay=wss://nos.lol"
 )
 
 func testAddress() Address {
@@ -19,15 +16,12 @@ func testAddress() Address {
 }
 
 func TestEncode(t *testing.T) {
-	bech32Addr, urlAddr, err := Encode(testAddress())
+	bech32Addr, err := Encode(testAddress())
 	if err != nil {
 		t.Fatalf("Encode() error = %v", err)
 	}
 	if bech32Addr != testBech32 {
 		t.Errorf("Encode() bech32 = %q, want %q", bech32Addr, testBech32)
-	}
-	if urlAddr != testURL {
-		t.Errorf("Encode() url = %q, want %q", urlAddr, testURL)
 	}
 }
 
