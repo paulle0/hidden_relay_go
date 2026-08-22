@@ -8,7 +8,7 @@ const (
 	testPubKey = "b118c8f2b6f8219ff6ffeb3ed4898babd51cef2d39914fa07ab0331e0f19902b"
 	testRelay  = "wss://nos.lol"
 
-	testBech32 = "nrvrelay1qqstzxxg72m0sgvl7ml7k0k53x96h4guauknny205patqvc7puveq2cpp4mhxue69uhkummn9ekx7mq8vnqfg"
+	testBech32 = "nrv1qqstzxxg72m0sgvl7ml7k0k53x96h4guauknny205patqvc7puveq2cpp4mhxue69uhkummn9ekx7mqtlqnte"
 )
 
 func testAddress() Address {
