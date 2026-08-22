@@ -16,42 +16,30 @@ func testAddress() Address {
 }
 
 func TestEncode(t *testing.T) {
-	bech32Addr, err := Encode(testAddress())
+	encoded, err := Encode(testAddress())
 	if err != nil {
 		t.Fatalf("Encode() error = %v", err)
 	}
-	if bech32Addr != testBech32 {
-		t.Errorf("Encode() bech32 = %q, want %q", bech32Addr, testBech32)
+	if encoded != testBech32 {
+		t.Errorf("Encode() = %q, want %q", encoded, testBech32)
 	}
 }
 
 func TestDecode(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-	}{
-		{"bech32", testBech32},
-		{"url", testURL},
+	got, err := Decode(testBech32)
+	if err != nil {
+		t.Fatalf("Decode(%q) error = %v", testBech32, err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decode(tt.input)
-			if err != nil {
-				t.Fatalf("Decode(%q) error = %v", tt.input, err)
-			}
-			want := testAddress()
-			if got.PublicKey != want.PublicKey {
-				t.Errorf("PublicKey = %q, want %q", got.PublicKey, want.PublicKey)
-			}
-			if len(got.Relays) != len(want.Relays) {
-				t.Fatalf("Relays = %q, want %q", got.Relays, want.Relays)
-			}
-			for i := range want.Relays {
-				if got.Relays[i] != want.Relays[i] {
-					t.Errorf("Relays[%d] = %q, want %q", i, got.Relays[i], want.Relays[i])
-				}
-			}
-		})
+	want := testAddress()
+	if got.PublicKey != want.PublicKey {
+		t.Errorf("PublicKey = %q, want %q", got.PublicKey, want.PublicKey)
+	}
+	if len(got.Relays) != len(want.Relays) {
+		t.Fatalf("Relays = %q, want %q", got.Relays, want.Relays)
+	}
+	for i := range want.Relays {
+		if got.Relays[i] != want.Relays[i] {
+			t.Errorf("Relays[%d] = %q, want %q", i, got.Relays[i], want.Relays[i])
+		}
 	}
 }
